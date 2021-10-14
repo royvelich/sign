@@ -11,6 +11,9 @@ from torch_geometric.utils import to_undirected, dropout_adj
 
 from ogb.nodeproppred import PygNodePropPredDataset
 
+import numpy as np
+from ppr import topk_ppr_matrix
+
 def get_adj(row, col, N, asymm_norm=False, set_diag=True, remove_diag=False):
     
     adj = SparseTensor(row=row, col=col, sparse_sizes=(N, N))
@@ -22,6 +25,7 @@ def get_adj(row, col, N, asymm_norm=False, set_diag=True, remove_diag=False):
         adj = adj.remove_diag()
     else:
         print('... keeping diag elements as they are')
+    return adj.to_scipy(layout='csr')
     if not asymm_norm:
         print('... performing symmetric normalization')
         deg = adj.sum(dim=1).to(torch.float)
@@ -44,8 +48,8 @@ def main():
     parser.add_argument('--file_name', type=str, default="test")
     parser.add_argument('--undirected_num_propagations', type=int, default=3)
     parser.add_argument('--directed_num_propagations', type=int, default=3)
-    parser.add_argument('--undirected_dropedge_rate', type=float, default=0.4)
-    parser.add_argument('--directed_dropedge_rate', type=float, default=0.2)
+    parser.add_argument('--undirected_dropedge_rate', type=float, default=0)#.4)
+    parser.add_argument('--directed_dropedge_rate', type=float, default=0)#.2)
     parser.add_argument('--undirected', action='store_true')
     parser.add_argument('--directed', action='store_true')
     parser.add_argument('--undirected_asymm_norm', action='store_true')
@@ -61,7 +65,8 @@ def main():
     
     # pre-processing ######################################################
 
-    dataset = PygNodePropPredDataset('ogbn-papers100M')
+    #dataset = PygNodePropPredDataset('ogbn-papers100M')
+    dataset = PygNodePropPredDataset('ogbn-arxiv')
     split_idx = dataset.get_idx_split()
     data = dataset[0]
 
@@ -82,6 +87,11 @@ def main():
     op_dict['op_embedding'].append(torch.from_numpy(x[all_idx]).to(torch.float))
 
     print('Start processing')
+
+    alpha = 0.2
+    eps = 1e-4
+    topk = 100000
+    ppr_normalization = 'row'
     
     if args.undirected:  # preprocess undirected operators
         
@@ -99,12 +109,48 @@ def main():
         print('Getting adj matrix')
         adj = get_adj(row, col, N, asymm_norm=args.undirected_asymm_norm, set_diag=args.undirected_set_diag, remove_diag=args.undirected_remove_diag)
         
+        idx = np.arange(adj.shape[0])
+        ppr = topk_ppr_matrix(adj, alpha, eps, idx, topk, ppr_normalization)
+        #ppr = ppr + 0.8*ppr.dot(ppr)
+
+        '''for l in range(125):
+            
+            row_adj = adj[l].toarray()[0]
+            row_ppr = ppr[l].toarray()[0]
+
+            #a = len([1 for i in range(169343) if (row_adj[i]==0 and row_ppr[i]>0)])
+            print(len([1 for i in range(169343) if (row_ppr[i]==0 and row_adj[i]>0)]))
+            print(len([1 for i in range(169343) if (row_ppr[i]>0 and row_adj[i]==0)]))
+            print(len([1 for i in range(169343) if (row_ppr[i]>0 and row_adj[i]>0)]))
+
+            t = adj.multiply(ppr)
+            row_t= t[l].toarray()[0]
+            print(len([1 for i in range(169343) if row_t[i]>0]))
+            import pdb; pdb.set_trace()
+
+            if b>0:
+                print(l, b)
+                print([i for i in range(169343) if row_adj[i]>0])
+                print([i for i in range(169343) if row_ppr[i]>0])
+
+        import pdb; pdb.set_trace()'''
+
+
+        '''np.random.seed(seed)
+        rnd = np.random.permutation(n)
+
+        train_idx = np.sort(rnd[:n_train])'''
+        
         # preprocessing of features
         print('Diffusing node features')
+        #ppr = ppr.multiply(adj)
         x = data.x.numpy()
         for _ in tqdm(range(args.undirected_num_propagations)):
-            x = adj @ x
+            #x = adj @ x
+            x = ppr @ x
             op_dict['op_embedding'].append(torch.from_numpy(x[all_idx]).to(torch.float))
+
+        #import pdb; pdb.set_trace()
     
     if args.directed:  # preprocess directed operators
         
@@ -117,23 +163,36 @@ def main():
         # get adj
         print('Getting adj matrix')
         adj = get_adj(row, col, N, asymm_norm=args.directed_asymm_norm, set_diag=args.directed_set_diag, remove_diag=args.directed_remove_diag)
+
+        idx = np.arange(adj.shape[0])
+        ppr = topk_ppr_matrix(adj, alpha, eps, idx, topk, ppr_normalization)
+        #ppr = ppr + 0.8*ppr.dot(ppr)
+        
         
         # preprocessing of features
         print('Diffusing node features')
+        #ppr = ppr.multiply(adj)
         x = data.x.numpy()
         for _ in tqdm(range(args.directed_num_propagations)):
-            x = adj @ x
+            #x = adj @ x
+            x = ppr @ x
             op_dict['op_embedding'].append(torch.from_numpy(x[all_idx]).to(torch.float))
             
         # get adj
         print('Getting transpose adj matrix')
         adj = get_adj(col, row, N, asymm_norm=args.directed_asymm_norm, set_diag=args.directed_set_diag, remove_diag=args.directed_remove_diag)
         
+        idx = np.arange(adj.shape[0])
+        ppr = topk_ppr_matrix(adj, alpha, eps, idx, topk, ppr_normalization)
+        #ppr = ppr + 0.8*ppr.dot(ppr)
+
         # preprocessing of features
         print('Diffusing node features')
+        #ppr = ppr.multiply(adj)
         x = data.x.numpy()
         for _ in tqdm(range(args.directed_num_propagations)):
-            x = adj @ x
+            #x = adj @ x
+            x = ppr @ x
             op_dict['op_embedding'].append(torch.from_numpy(x[all_idx]).to(torch.float))
 
     torch.save(op_dict, '{}.pt'.format(args.file_name))

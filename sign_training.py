@@ -124,7 +124,7 @@ def main():
     split_idx = op_dict['split_idx']
     x = torch.cat(op_dict['op_embedding'], dim=1)
     y = op_dict['label'].to(torch.long)
-    num_classes = 172
+    num_classes = 40 #172
     print('Input feature dimension: {}'.format(x.shape[-1]))
     print('Total number of nodes: {}'.format(x.shape[0]))
 
@@ -137,7 +137,8 @@ def main():
     test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False)
 
     model = MLP(
-        x.size(-1),
+        #x.size(-1),
+        x.shape[-1],
         args.hidden_channels,
         num_classes,
         args.num_layers,
@@ -146,7 +147,8 @@ def main():
     num_trainable_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('Total number of parameters: {}.'.format(num_trainable_parameters))
     
-    evaluator = Evaluator(name='ogbn-papers100M')
+    #evaluator = Evaluator(name='ogbn-papers100M')
+    evaluator = Evaluator(name='ogbn-arxiv')
     logger = Logger(args.runs, info=args, file_name=args.result_file_name)
 
     for run in range(args.runs):
