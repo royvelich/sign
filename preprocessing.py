@@ -61,7 +61,7 @@ def main():
     
     # pre-processing ######################################################
 
-    dataset = PygNodePropPredDataset('ogbn-papers100M')
+    dataset = PygNodePropPredDataset('ogbn-arxiv')
     split_idx = dataset.get_idx_split()
     data = dataset[0]
 
