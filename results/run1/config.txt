@@ -1,0 +1,5 @@
+1.	Replace adjacency matrix with PPR matrix
+2.	Row normalization
+3.	Remove Dropout
+4.	Alpha = 0.2
+5.	TopK = inf
