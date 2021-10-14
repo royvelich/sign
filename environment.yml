@@ -1,0 +1,21 @@
+name: sign
+channels:
+  - nvidia
+  - pytorch
+  - defaults
+  - conda-forge
+  - pyg
+dependencies:
+  - cudatoolkit=11.1
+  - python
+  - pytorch=1.9
+  - torchaudio
+  - torchvision
+  - numpy
+  - scipy
+  - tqdm
+  - pip
+  - ogb
+  - pytorch-sparse
+  - pyg
+  - numba=0.54.1
