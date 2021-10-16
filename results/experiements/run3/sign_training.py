@@ -2,8 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-
-import numpy as np
 from tqdm import tqdm
 
 import torch
@@ -13,8 +11,6 @@ from torch.utils.data import Dataset, DataLoader
 from ogb.nodeproppred import Evaluator
 
 from logger import Logger
-
-import time
 
 
 class Sine(torch.nn.Module):
@@ -167,15 +163,12 @@ def main():
 
     logger = Logger(args.runs, info=args, file_name=args.result_file_name)
 
-
-    run_deltas = []
-
     for run in range(args.runs):
-        epoch_deltas = []
+        
         model.reset_parameters()
         optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
         for epoch in range(1, 1 + args.epochs):
-            start_time = time.time()
+            
             train(model, device, train_loader, optimizer)
             train_acc = test(model, device, train_loader, evaluator)
             valid_acc = test(model, device, valid_loader, evaluator)
@@ -190,18 +183,7 @@ def main():
                       f'Valid: {100 * valid_acc:.2f}%, '
                       f'Test: {100 * test_acc:.2f}%')
 
-            end_time = time.time()
-            delta = end_time - start_time
-            epoch_deltas.append(delta)
-            run_deltas.append(delta)
-            print(f'Epoch Time: {delta} seconds')
-
-        deltas_np = np.array(epoch_deltas)
-        print(f'Average Epoch Time: {np.average(deltas_np)} seconds')
         logger.print_statistics(run)
-
-    run_deltas_np = np.array(run_deltas)
-    print(f'Average Run Time: {np.average(run_deltas_np)} seconds')
     logger.print_statistics()
 
 if __name__=='__main__':
