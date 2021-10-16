@@ -46,10 +46,10 @@ def get_adj(row, col, N, asymm_norm=False, set_diag=True, remove_diag=False):
 def main():
     parser = argparse.ArgumentParser(description='OGBN-papers100M (SIGN)')
     parser.add_argument('--file_name', type=str, default="test")
-    parser.add_argument('--undirected_num_propagations', type=int, default=3)
-    parser.add_argument('--directed_num_propagations', type=int, default=3)
-    parser.add_argument('--undirected_dropedge_rate', type=float, default=0)#.4)
-    parser.add_argument('--directed_dropedge_rate', type=float, default=0)#.2)
+    parser.add_argument('--undirected_num_propagations', type=int, default=1)
+    parser.add_argument('--directed_num_propagations', type=int, default=1)
+    parser.add_argument('--undirected_dropedge_rate', type=float, default=0.4)
+    parser.add_argument('--directed_dropedge_rate', type=float, default=0.2)
     parser.add_argument('--undirected', action='store_true')
     parser.add_argument('--directed', action='store_true')
     parser.add_argument('--undirected_asymm_norm', action='store_true')
@@ -88,9 +88,9 @@ def main():
 
     print('Start processing')
 
-    alpha = 0.2
+    alpha = 0.4
     eps = 1e-4
-    topk = 100000
+    topk = 100
     ppr_normalization = 'row'
     
     if args.undirected:  # preprocess undirected operators
@@ -111,7 +111,7 @@ def main():
         
         idx = np.arange(adj.shape[0])
         ppr = topk_ppr_matrix(adj, alpha, eps, idx, topk, ppr_normalization)
-        #ppr = ppr + 0.8*ppr.dot(ppr)
+        ppr = ppr + ppr.dot(ppr)
 
         '''for l in range(125):
             
@@ -166,7 +166,7 @@ def main():
 
         idx = np.arange(adj.shape[0])
         ppr = topk_ppr_matrix(adj, alpha, eps, idx, topk, ppr_normalization)
-        #ppr = ppr + 0.8*ppr.dot(ppr)
+        ppr = ppr + ppr.dot(ppr)
         
         
         # preprocessing of features
@@ -184,7 +184,7 @@ def main():
         
         idx = np.arange(adj.shape[0])
         ppr = topk_ppr_matrix(adj, alpha, eps, idx, topk, ppr_normalization)
-        #ppr = ppr + 0.8*ppr.dot(ppr)
+        ppr = ppr + ppr.dot(ppr)
 
         # preprocessing of features
         print('Diffusing node features')

@@ -13,6 +13,15 @@ from ogb.nodeproppred import Evaluator
 from logger import Logger
 
 
+class Sine(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, input):
+        # See paper sec. 3.2, final paragraph, and supplement Sec. 1.5 for discussion of factor 30
+        return torch.sin(input)
+
+
 class SimpleDataset(Dataset):
     def __init__(self, x, y):
         self.x = x
@@ -41,6 +50,7 @@ class MLP(torch.nn.Module):
         self.lins.append(torch.nn.Linear(hidden_channels, out_channels))
 
         self.dropout = dropout
+        self.sine = Sine()
 
     def reset_parameters(self):
         for lin in self.lins:
@@ -52,7 +62,8 @@ class MLP(torch.nn.Module):
         for i, lin in enumerate(self.lins[:-1]):
             x = lin(x)
             x = self.bns[i](x)
-            x = F.relu(x)
+            # x = F.relu(x)
+            x = self.sine(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.lins[-1](x)
         return torch.log_softmax(x, dim=-1)
@@ -149,6 +160,7 @@ def main():
     
     #evaluator = Evaluator(name='ogbn-papers100M')
     evaluator = Evaluator(name='ogbn-arxiv')
+
     logger = Logger(args.runs, info=args, file_name=args.result_file_name)
 
     for run in range(args.runs):
